@@ -1,1 +1,3 @@
-fn main() { roachpet_lib::run(); }
+fn main() {
+    roachpet_lib::run();
+}

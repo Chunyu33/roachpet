@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.4", features = [] }
 
 [dependencies]
-tauri = { version = "2.8", features = ["image-png"] }
+tauri = { version = "2.8", features = ["image-png", "tray-icon"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 windows = { version = "0.61", features = ["Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging"] }

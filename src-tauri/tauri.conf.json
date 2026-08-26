@@ -3,7 +3,28 @@
   "productName": "RoachPet",
   "version": "0.1.0",
   "identifier": "com.roachpet.app",
-  "build": { "beforeDevCommand": "npm run dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "npm run build", "frontendDist": "../dist" },
-  "app": { "windows": [{ "label":"main", "title":"RoachPet", "width":120, "height":120, "decorations":false, "transparent":true, "alwaysOnTop":true, "skipTaskbar":true, "resizable":false, "shadow":false, "visible":true }] },
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "RoachPet",
+        "width": 120,
+        "height": 120,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "shadow": false,
+        "visible": true
+      }
+    ]
+  },
   "bundle": { "active": true, "targets": "all", "icon": ["icons/icon.ico"] }
 }
