@@ -14,3 +14,10 @@
 - Fixed settings save delivery by routing the payload through a Rust command.
 - Fixed native pet positioning by moving each host window through Rust.
 - Increased roaming visibility with independent two-dimensional movement and edge bouncing.
+- Added structured SVG insect animation with alternating tripod gait, independent head and antenna motion, and subtle body bob.
+- Added smooth acceleration/deceleration, curved turns, occasional run bursts, and flee direction based on the click position.
+- Corrected mirrored leg coordinates so all six legs render on both sides.
+- Removed the dev overlay background that could appear as a gray half-dome inside the clipped transparent window.
+- Extended antennae for a more recognizable silhouette.
+- Persisted the saved roach count on startup and hide unused native pet windows immediately.
+- Refined settings spacing, scrollbar placement, and button sizing; removed the dev overlay artifact from pet windows.

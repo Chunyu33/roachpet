@@ -40,7 +40,6 @@ export default function Settings() {
 
   return (
     <main className="settings">
-      <h1>RoachPet 设置</h1>
       <section className="form">
         <label>
           蟑螂数量

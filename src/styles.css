@@ -25,11 +25,13 @@ body {
   left: 0;
   top: 0;
   color: #7cff9b;
-  background: rgba(0, 0, 0, 0.55);
+  /* Keep debug text transparent: the native Windows hit region is clipped
+     to an ellipse, which would otherwise turn this box into a gray half-dome. */
+  background: transparent;
   padding: 2px 4px;
-  border-radius: 3px;
   font:
     9px ui-monospace,
     monospace;
   pointer-events: none;
+  text-shadow: 0 1px 2px #000;
 }

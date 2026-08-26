@@ -2,7 +2,7 @@ import type { RoachBehaviorConfig } from "../types/roach";
 
 // 集中管理行为参数，后续设置窗口可以直接读写这组配置。
 export const DEFAULT_BEHAVIOR_CONFIG: RoachBehaviorConfig = {
-  roachCount: 3,
+  roachCount: 1,
   roachSize: 96,
   walkSpeed: 72,
   escapeSpeed: 260,
@@ -13,6 +13,13 @@ export const DEFAULT_BEHAVIOR_CONFIG: RoachBehaviorConfig = {
   turnIntervalMax: 4.8,
   escapeDuration: 0.9,
   wanderStrength: 0.35,
+  runSpeed: 170,
+  acceleration: 4.5,
+  deceleration: 5.5,
+  turnSpeed: 4.2,
+  runChance: 0.055,
+  runDurationMin: 0.35,
+  runDurationMax: 1.1,
 };
 
 export function createBehaviorConfig(
@@ -32,5 +39,12 @@ export function createBehaviorConfig(
     turnIntervalMax: Math.max(config.turnIntervalMin, config.turnIntervalMax),
     escapeDuration: Math.max(0.1, config.escapeDuration),
     wanderStrength: Math.max(0, config.wanderStrength),
+    runSpeed: Math.max(config.walkSpeed, config.runSpeed),
+    acceleration: Math.max(0.1, config.acceleration),
+    deceleration: Math.max(0.1, config.deceleration),
+    turnSpeed: Math.max(0.1, config.turnSpeed),
+    runChance: Math.min(1, Math.max(0, config.runChance)),
+    runDurationMin: Math.max(0.1, config.runDurationMin),
+    runDurationMax: Math.max(config.runDurationMin, config.runDurationMax),
   };
 }

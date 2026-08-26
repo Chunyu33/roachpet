@@ -79,6 +79,7 @@ pub fn run() {
                 .skip_taskbar(true)
                 .resizable(false)
                 .shadow(false)
+                .visible(false)
                 .position(160.0 * index as f64, 120.0 * index as f64)
                 .build()?;
                 configure_roach_window(&child)?;

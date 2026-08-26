@@ -1,4 +1,4 @@
-export type RoachState = "IDLE" | "WALK" | "ESCAPE";
+export type RoachState = "IDLE" | "WALK" | "RUN" | "FLEE";
 // 这些类型只描述桌宠领域数据，避免组件直接依赖窗口或 Tauri 实现细节。
 export interface ScreenBounds {
   width: number;
@@ -14,6 +14,11 @@ export interface Roach {
   direction: number;
   velocity: Position;
   speed: number;
+  targetSpeed: number;
+  heading: number;
+  targetHeading: number;
+  gaitPhase: number;
+  animationTime: number;
   state: RoachState;
   stateTime: number;
 }
@@ -29,4 +34,11 @@ export interface RoachBehaviorConfig {
   turnIntervalMax: number;
   escapeDuration: number;
   wanderStrength: number;
+  runSpeed: number;
+  acceleration: number;
+  deceleration: number;
+  turnSpeed: number;
+  runChance: number;
+  runDurationMin: number;
+  runDurationMax: number;
 }
