@@ -5,7 +5,7 @@ use tauri::{
     WebviewWindowBuilder,
 };
 #[cfg(windows)]
-use windows::Win32::Graphics::Gdi::{CreateEllipticRgn, SetWindowRgn};
+use windows::Win32::Graphics::Gdi::{CreateRectRgn, SetWindowRgn};
 
 const ROACH_WINDOW_COUNT: usize = 3;
 
@@ -72,7 +72,7 @@ pub fn run() {
                     WebviewUrl::App("index.html".into()),
                 )
                 .title("RoachPet")
-                .inner_size(120.0, 120.0)
+                .inner_size(160.0, 160.0)
                 .decorations(false)
                 .transparent(true)
                 .always_on_top(true)
@@ -157,13 +157,16 @@ fn configure_roach_window(window: &WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Limit native hit-testing to the cockroach area, so the transparent corners
-/// of the small host window do not intercept desktop clicks.
+/// Keep the native host canvas bounded to the small pet area while allowing
+/// rotated legs, long antennae, and speech bubbles to render without clipping.
 #[cfg(windows)]
 fn apply_roach_hit_region(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     let scale = window.scale_factor()?;
     let edge = |value: f64| (value * scale).round() as i32;
-    let region = unsafe { CreateEllipticRgn(edge(12.0), edge(12.0), edge(108.0), edge(108.0)) };
+    // Use a transparent rectangular canvas instead of an ellipse. The old
+    // ellipse clipped long antennae, rotated legs, and hover speech bubbles.
+    // The host window remains small (160x160) and only covers the pet area.
+    let region = unsafe { CreateRectRgn(edge(0.0), edge(0.0), edge(160.0), edge(160.0)) };
     unsafe { SetWindowRgn(window.hwnd()?, Some(region), true) };
     Ok(())
 }

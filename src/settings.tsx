@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { DEFAULT_BEHAVIOR_CONFIG } from "./game/behaviorConfig";
+import {
+  createBehaviorConfig,
+  DEFAULT_BEHAVIOR_CONFIG,
+} from "./game/behaviorConfig";
 import type { RoachBehaviorConfig } from "./types/roach";
 import "./settings.css";
 
@@ -9,9 +12,7 @@ function readSavedConfig(): RoachBehaviorConfig {
   // 设置窗口独立于桌宠窗口，先从本地缓存恢复上次的表单值。
   try {
     const saved = localStorage.getItem("roachpet.behavior-config");
-    return saved
-      ? { ...DEFAULT_BEHAVIOR_CONFIG, ...JSON.parse(saved) }
-      : DEFAULT_BEHAVIOR_CONFIG;
+    return createBehaviorConfig(saved ? JSON.parse(saved) : {});
   } catch {
     return DEFAULT_BEHAVIOR_CONFIG;
   }
@@ -52,6 +53,19 @@ export default function Settings() {
               update("roachCount", Number(event.target.value))
             }
           />
+        </label>
+        <label>
+          蟑螂个头
+          <select
+            value={config.roachSize}
+            onChange={(event) =>
+              update("roachSize", Number(event.target.value))
+            }
+          >
+            <option value="72">街坊标配 · 小巧灵活</option>
+            <option value="96">大只佬 · 默认体型</option>
+            <option value="104">广东巨无霸 · 压迫感拉满</option>
+          </select>
         </label>
         <label>
           移动速度

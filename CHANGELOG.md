@@ -21,3 +21,5 @@
 - Extended antennae for a more recognizable silhouette.
 - Persisted the saved roach count on startup and hide unused native pet windows immediately.
 - Refined settings spacing, scrollbar placement, and button sizing; removed the dev overlay artifact from pet windows.
+- Replaced the HTML hover bubble with an inline SVG bubble to avoid transparent-window clipping artifacts.
+- Switched the pet host from an elliptical mask to a bounded transparent canvas so oversized roaches and speech bubbles are not clipped.

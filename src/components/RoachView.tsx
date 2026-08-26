@@ -5,30 +5,49 @@ import "./RoachView.css";
 
 interface RoachViewProps {
   roach: Roach;
+  size?: number;
   onClick: (id: string, pointer?: { x: number; y: number }) => void;
 }
 
-export function RoachView({ roach, onClick }: RoachViewProps) {
+export function RoachView({ roach, size = 96, onClick }: RoachViewProps) {
   const [pointerAngle, setPointerAngle] = useState<number | null>(null);
+  const [hovered, setHovered] = useState(false);
   // The SVG's natural forward axis points upward (towards the head). Rotate
   // that axis onto the current velocity vector instead of only mirroring X.
   const travelAngle =
     (Math.atan2(roach.velocity.y, roach.velocity.x) * 180) / Math.PI + 90;
+  const visualHeight = (size * 108) / 96;
+  const bubbleLines = [
+    "靓仔，行路带风啊？",
+    "靓女，唔好盯住我喎。",
+    "借过借过，赶着去叹早茶。",
+    "你负责工作，我负责巡逻。",
+    "广东天气咁热，出来透透气。",
+  ];
+  const bubbleText =
+    bubbleLines[Math.floor(roach.animationTime / 3) % bubbleLines.length];
   return (
     <button
       className={`roach ${roach.state.toLowerCase()}`}
       style={{
         left: roach.position.x,
         top: roach.position.y,
+        width: size,
+        height: visualHeight,
+        transformOrigin: `${size / 2}px ${visualHeight / 2}px`,
         transform: `rotate(${travelAngle}deg)`,
       }}
+      onPointerEnter={() => setHovered(true)}
       onPointerMove={(event) => {
         const rect = event.currentTarget.getBoundingClientRect();
-        const dx = event.clientX - rect.left - 48;
-        const dy = event.clientY - rect.top - 54;
+        const dx = event.clientX - rect.left - size / 2;
+        const dy = event.clientY - rect.top - visualHeight / 2;
         setPointerAngle((Math.atan2(dy, dx) * 180) / Math.PI);
       }}
-      onPointerLeave={() => setPointerAngle(null)}
+      onPointerLeave={() => {
+        setPointerAngle(null);
+        setHovered(false);
+      }}
       onClick={(event) => {
         const rect = event.currentTarget.getBoundingClientRect();
         onClick(roach.id, {
@@ -38,7 +57,13 @@ export function RoachView({ roach, onClick }: RoachViewProps) {
       }}
       aria-label="Roach"
     >
-      <RoachSprite roach={roach} pointerAngle={pointerAngle} />
+      <RoachSprite
+        roach={roach}
+        pointerAngle={pointerAngle}
+        showBubble={hovered}
+        bubbleText={bubbleText}
+        travelAngle={travelAngle}
+      />
     </button>
   );
 }

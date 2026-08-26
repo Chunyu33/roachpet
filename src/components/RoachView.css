@@ -16,8 +16,8 @@
 }
 .roach-svg {
   display: block;
-  width: 96px;
-  height: 108px;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   user-select: none;
   pointer-events: none;

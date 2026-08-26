@@ -14,8 +14,8 @@
       {
         "label": "main",
         "title": "RoachPet",
-        "width": 120,
-        "height": 120,
+        "width": 160,
+        "height": 160,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,

@@ -33,6 +33,7 @@ function windowIndex(label: string): number {
 export default function App() {
   const savedConfig = readSavedConfig();
   const [bounds, setBounds] = useState<ScreenBounds>(fallbackBounds);
+  const [roachSize, setRoachSize] = useState(savedConfig.roachSize);
   const [roaches, setRoaches] = useState<Roach[]>(
     () =>
       new MovementController(fallbackBounds, {
@@ -49,6 +50,7 @@ export default function App() {
       "settings-updated",
       (event) => {
         controller.current?.applyConfig(event.payload);
+        if (event.payload.roachSize) setRoachSize(event.payload.roachSize);
         const configuredCount = Math.max(
           1,
           Math.floor(
@@ -69,6 +71,7 @@ export default function App() {
           roachCount: 1,
         });
         setRoaches(controller.current.snapshot);
+        setRoachSize(savedConfig.roachSize);
         const index = windowIndex(appWindow.current.label);
         const configuredCount = savedConfig.roachCount;
         void (index < configuredCount
@@ -121,6 +124,7 @@ export default function App() {
         <RoachView
           key={roach.id}
           roach={{ ...roach, position: { x: ROACH_OFFSET, y: ROACH_OFFSET } }}
+          size={roachSize}
           onClick={(id, pointer) => controller.current?.escape(id, pointer)}
         />
       ))}

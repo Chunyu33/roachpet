@@ -3,6 +3,9 @@ import type { Roach } from "../types/roach";
 interface RoachSpriteProps {
   roach: Roach;
   pointerAngle?: number | null;
+  showBubble?: boolean;
+  bubbleText?: string;
+  travelAngle?: number;
 }
 
 type Leg = {
@@ -67,7 +70,13 @@ const legs: Leg[] = [
   },
 ];
 
-export function RoachSprite({ roach, pointerAngle = null }: RoachSpriteProps) {
+export function RoachSprite({
+  roach,
+  pointerAngle = null,
+  showBubble = false,
+  bubbleText = "",
+  travelAngle = 0,
+}: RoachSpriteProps) {
   const gradientId = roach.id.replace(/[^a-zA-Z0-9_-]/g, "-");
   const running = roach.state === "RUN" || roach.state === "FLEE";
   const motion = Math.min(1, roach.speed / Math.max(roach.targetSpeed, 1));
@@ -142,16 +151,16 @@ export function RoachSprite({ roach, pointerAngle = null }: RoachSpriteProps) {
           fill="none"
           strokeWidth="1.1"
         >
-          <path d="M43 30 C35 19 24 8 5 0" />
-          <circle cx="5" cy="0" r="1" fill="#c98250" stroke="none" />
+          <path d="M43 30 C34 16 21 2 0 -8" />
+          <circle cx="0" cy="-8" r="1" fill="#c98250" stroke="none" />
         </g>
         <g
           transform={`rotate(${antennaRight} 53 30)`}
           fill="none"
           strokeWidth="1.1"
         >
-          <path d="M53 30 C61 19 72 8 91 0" />
-          <circle cx="91" cy="0" r="1" fill="#c98250" stroke="none" />
+          <path d="M53 30 C62 16 75 2 96 -8" />
+          <circle cx="96" cy="-8" r="1" fill="#c98250" stroke="none" />
         </g>
 
         <path
@@ -191,6 +200,32 @@ export function RoachSprite({ roach, pointerAngle = null }: RoachSpriteProps) {
           <circle cx="50.2" cy="27" r=".9" fill="#d58a52" stroke="none" />
         </g>
       </g>
+      {showBubble && (
+        <g transform={`rotate(${-travelAngle} 48 54)`} pointerEvents="none">
+          <rect
+            x="4"
+            y="4"
+            width="88"
+            height="25"
+            rx="7"
+            fill="#271811"
+            fillOpacity=".96"
+            stroke="#8a5130"
+            strokeWidth=".8"
+          />
+          <path d="M22 29 L27 29 L24 34 Z" fill="#271811" />
+          <text
+            x="48"
+            y="20"
+            textAnchor="middle"
+            fill="#ffe8d2"
+            fontFamily="Microsoft YaHei, sans-serif"
+            fontSize="7"
+          >
+            {bubbleText}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }
