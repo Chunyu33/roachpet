@@ -3,7 +3,8 @@ import type { RoachBehaviorConfig } from "../types/roach";
 // 集中管理行为参数，后续设置窗口可以直接读写这组配置。
 export const DEFAULT_BEHAVIOR_CONFIG: RoachBehaviorConfig = {
   roachCount: 1,
-  roachSize: 96,
+  roachSize: 120,
+  startupDelaySeconds: 0,
   walkSpeed: 72,
   escapeSpeed: 260,
   idleChance: 0.22,
@@ -30,6 +31,10 @@ export function createBehaviorConfig(
     ...config,
     roachCount: Math.max(1, Math.floor(config.roachCount)),
     roachSize: Math.max(32, config.roachSize),
+    startupDelaySeconds: Math.min(
+      3600,
+      Math.max(0, config.startupDelaySeconds),
+    ),
     walkSpeed: Math.max(1, config.walkSpeed),
     escapeSpeed: Math.max(config.walkSpeed, config.escapeSpeed),
     idleChance: Math.min(1, Math.max(0, config.idleChance)),

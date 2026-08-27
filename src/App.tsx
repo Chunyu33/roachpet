@@ -11,13 +11,15 @@ import { MovementController } from "./game/movementController";
 import type { Roach, ScreenBounds } from "./types/roach";
 import "./styles.css";
 
-const ROACH_OFFSET = 12;
+// 透明画布为旋转后的桌宠预留安全边距；窗口坐标允许为负数，才能在屏幕边缘保持视觉位置正确。
+const ROACH_OFFSET = 108;
 const fallbackBounds: ScreenBounds = {
   width: window.screen.availWidth,
   height: window.screen.availHeight,
 };
 
 function readSavedConfig() {
+  // 启动时读取上次保存的参数，避免窗口创建后又恢复到默认数量。
   try {
     const saved = localStorage.getItem("roachpet.behavior-config");
     return createBehaviorConfig(saved ? JSON.parse(saved) : {});
@@ -44,6 +46,38 @@ export default function App() {
   const controller = useRef<MovementController | null>(null);
   const appWindow = useRef(getCurrentWindow());
   const lastWindowMove = useRef(0);
+  // 启动延迟只在本次进程启动时计时，避免保存其他参数时桌宠突然重新隐藏。
+  const startupDeadline = useRef(
+    performance.now() + savedConfig.startupDelaySeconds * 1000,
+  );
+  const configuredCount = useRef(savedConfig.roachCount);
+  const revealTimer = useRef<number | null>(null);
+
+  const updateWindowVisibility = (count: number) => {
+    configuredCount.current = count;
+    void invoke("set_roach_count", { count }).catch((error) =>
+      console.error("同步桌宠数量失败:", error),
+    );
+    if (revealTimer.current !== null) {
+      window.clearTimeout(revealTimer.current);
+      revealTimer.current = null;
+    }
+    const index = windowIndex(appWindow.current.label);
+    if (index >= count) {
+      void appWindow.current.hide();
+      return;
+    }
+    const remaining = startupDeadline.current - performance.now();
+    if (remaining <= 0) {
+      void appWindow.current.show();
+      return;
+    }
+    void appWindow.current.hide();
+    revealTimer.current = window.setTimeout(() => {
+      revealTimer.current = null;
+      if (index < configuredCount.current) void appWindow.current.show();
+    }, remaining);
+  };
 
   useEffect(() => {
     const unlistenPromise = listen<Partial<typeof DEFAULT_BEHAVIOR_CONFIG>>(
@@ -57,10 +91,7 @@ export default function App() {
             event.payload.roachCount ?? DEFAULT_BEHAVIOR_CONFIG.roachCount,
           ),
         );
-        const index = windowIndex(appWindow.current.label);
-        void (index < configuredCount
-          ? appWindow.current.show()
-          : appWindow.current.hide());
+        updateWindowVisibility(configuredCount);
       },
     );
     invoke<ScreenBounds>("get_screen_bounds")
@@ -72,11 +103,7 @@ export default function App() {
         });
         setRoaches(controller.current.snapshot);
         setRoachSize(savedConfig.roachSize);
-        const index = windowIndex(appWindow.current.label);
-        const configuredCount = savedConfig.roachCount;
-        void (index < configuredCount
-          ? appWindow.current.show()
-          : appWindow.current.hide());
+        updateWindowVisibility(savedConfig.roachCount);
       })
       .catch((error) => {
         console.error("Failed to read screen bounds:", error);
@@ -84,12 +111,13 @@ export default function App() {
           ...savedConfig,
           roachCount: 1,
         });
-        const index = windowIndex(appWindow.current.label);
-        void (index < savedConfig.roachCount
-          ? appWindow.current.show()
-          : appWindow.current.hide());
+        updateWindowVisibility(savedConfig.roachCount);
       });
     return () => {
+      if (revealTimer.current !== null) {
+        window.clearTimeout(revealTimer.current);
+        revealTimer.current = null;
+      }
       void unlistenPromise.then((unlisten) => unlisten());
     };
   }, []);
@@ -108,8 +136,8 @@ export default function App() {
       if (roach && now - lastWindowMove.current > 33) {
         lastWindowMove.current = now;
         void invoke("move_roach_window", {
-          x: Math.max(0, roach.position.x - ROACH_OFFSET),
-          y: Math.max(0, roach.position.y - ROACH_OFFSET),
+          x: roach.position.x - ROACH_OFFSET,
+          y: roach.position.y - ROACH_OFFSET,
         }).catch((error) => console.error("移动蟑螂窗口失败:", error));
       }
       frame = requestAnimationFrame(tick);

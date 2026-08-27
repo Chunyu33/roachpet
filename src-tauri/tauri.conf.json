@@ -14,15 +14,15 @@
       {
         "label": "main",
         "title": "RoachPet",
-        "width": 160,
-        "height": 160,
+        "width": 360,
+        "height": 360,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": false,
         "shadow": false,
-        "visible": true
+        "visible": false
       }
     ]
   },

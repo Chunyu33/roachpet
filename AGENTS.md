@@ -80,6 +80,7 @@ If output contains unreadable characters, inspect the exit code first.
   - 使用方式（如有）
   - 变更点（简要）
 - 不允许代码与文档不一致
+- 不允许无意义堆（递增）变更，精简主要内容即可
 
 ---
 

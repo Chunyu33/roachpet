@@ -25,6 +25,7 @@ export interface Roach {
 export interface RoachBehaviorConfig {
   roachCount: number;
   roachSize: number;
+  startupDelaySeconds: number;
   walkSpeed: number;
   escapeSpeed: number;
   idleChance: number;

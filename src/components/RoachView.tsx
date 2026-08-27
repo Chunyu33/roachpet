@@ -1,5 +1,6 @@
 import type { Roach } from "../types/roach";
 import { useState } from "react";
+import { getRoachDialogue } from "../game/dialogue";
 import { RoachSprite } from "./RoachSprite";
 import "./RoachView.css";
 
@@ -12,20 +13,12 @@ interface RoachViewProps {
 export function RoachView({ roach, size = 96, onClick }: RoachViewProps) {
   const [pointerAngle, setPointerAngle] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
+  const [bubbleText, setBubbleText] = useState("");
   // The SVG's natural forward axis points upward (towards the head). Rotate
   // that axis onto the current velocity vector instead of only mirroring X.
   const travelAngle =
     (Math.atan2(roach.velocity.y, roach.velocity.x) * 180) / Math.PI + 90;
   const visualHeight = (size * 108) / 96;
-  const bubbleLines = [
-    "靓仔，行路带风啊？",
-    "靓女，唔好盯住我喎。",
-    "借过借过，赶着去叹早茶。",
-    "你负责工作，我负责巡逻。",
-    "广东天气咁热，出来透透气。",
-  ];
-  const bubbleText =
-    bubbleLines[Math.floor(roach.animationTime / 3) % bubbleLines.length];
   return (
     <button
       className={`roach ${roach.state.toLowerCase()}`}
@@ -37,7 +30,10 @@ export function RoachView({ roach, size = 96, onClick }: RoachViewProps) {
         transformOrigin: `${size / 2}px ${visualHeight / 2}px`,
         transform: `rotate(${travelAngle}deg)`,
       }}
-      onPointerEnter={() => setHovered(true)}
+      onPointerEnter={() => {
+        setBubbleText(getRoachDialogue());
+        setHovered(true);
+      }}
       onPointerMove={(event) => {
         const rect = event.currentTarget.getBoundingClientRect();
         const dx = event.clientX - rect.left - size / 2;

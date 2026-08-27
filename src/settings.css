@@ -7,6 +7,10 @@
 * {
   box-sizing: border-box;
 }
+::selection {
+  background: #d97835;
+  color: #fff;
+}
 html,
 body,
 #settings-root {
@@ -14,6 +18,7 @@ body,
   height: 100%;
   margin: 0;
   background: #1b1512;
+  user-select: none;
 }
 body {
   overflow: hidden;
@@ -61,6 +66,20 @@ body {
   font: inherit;
   outline: none;
 }
+.delay-inputs {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.delay-inputs input[type="number"] {
+  flex: 1;
+  min-width: 0;
+}
+.delay-inputs span {
+  color: #b99f90;
+  font-size: 12px;
+}
 .settings input[type="number"]:focus {
   border-color: #e88a4b;
   box-shadow: 0 0 0 2px #d9783533;
@@ -100,18 +119,36 @@ body {
   border: 1px solid #241a15;
 }
 .error {
-  margin: 8px 0 0;
+  margin: 0;
   color: #ff9c87;
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
-.actions {
+.saved {
+  margin: 0;
+  color: #d5e8d0;
+  font-size: 12px;
+}
+.action-bar {
   flex: 0 0 auto;
+  min-width: 0;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid #3b2a21;
   background: #1b1512;
+}
+.status {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 36px;
+  overflow-y: auto;
+}
+.actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
 }
 .actions button {
   min-width: 78px;

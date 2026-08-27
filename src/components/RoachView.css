@@ -1,18 +1,21 @@
-/* 仅动画素材，不改变原生窗口尺寸，保证点击区域与 hit region 对齐。 */
+/* 桌宠视觉与点击区域保持同尺寸，外层透明画布负责承载旋转后的溢出内容。 */
 .roach {
   position: absolute;
-  width: 96px;
-  height: 108px;
+  width: 120px;
+  height: 135px;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
+  /* 旋转后的 SVG 需要越过按钮原始矩形绘制，最终由更大的透明宿主统一裁剪。 */
+  overflow: visible;
   transform-origin: 48px 54px;
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.35));
   transition: filter 0.15s;
 }
 .roach:hover {
-  filter: drop-shadow(0 3px 5px rgba(255, 170, 0, 0.75));
+  /* 保持气泡的白底黑边，不用橙色光晕污染气泡边框。 */
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.38));
 }
 .roach-svg {
   display: block;

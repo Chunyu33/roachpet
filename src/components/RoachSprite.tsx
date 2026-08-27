@@ -70,6 +70,16 @@ const legs: Leg[] = [
   },
 ];
 
+function wrapDialogue(text: string, maximumCharacters = 13): string[] {
+  // 中文气泡没有可靠的空格分词，按字符切行可以保证任何文案都不会越过边框。
+  const characters = Array.from(text);
+  const lines: string[] = [];
+  for (let index = 0; index < characters.length; index += maximumCharacters) {
+    lines.push(characters.slice(index, index + maximumCharacters).join(""));
+  }
+  return lines.length > 0 ? lines : [""];
+}
+
 export function RoachSprite({
   roach,
   pointerAngle = null,
@@ -86,11 +96,22 @@ export function RoachSprite({
     pointerAngle == null
       ? Math.sin(roach.animationTime * 1.7) * 3
       : pointerAngle * 0.07;
-  const antennaLeft =
-    Math.sin(roach.animationTime * 3.8) * 5 + (pointerAngle ?? 0) * 0.1;
-  const antennaRight =
-    Math.sin(roach.animationTime * 3.35 + 1.9) * 5 + (pointerAngle ?? 0) * 0.08;
+  // 两根触须使用镜像偏转，避免整体旋转或鼠标靠近时一边折回身体。
+  const antennaWobble = Math.sin(roach.animationTime * 3.6) * 4;
+  const pointerBias = Math.max(-18, Math.min(18, pointerAngle ?? 0)) * 0.12;
+  const antennaLeft = antennaWobble + pointerBias;
+  const antennaRight = -antennaWobble - pointerBias;
   const legAmplitude = running ? 5 : 3.2;
+  const dialogueLines = showBubble ? wrapDialogue(bubbleText) : [];
+  const longestLine = Math.max(
+    ...dialogueLines.map((line) => Array.from(line).length),
+    1,
+  );
+  const bubbleWidth = Math.max(112, Math.min(176, longestLine * 8.5 + 20));
+  const bubbleHeight = 14 + dialogueLines.length * 11;
+  const bubbleX = 48 - bubbleWidth / 2;
+  // 尾巴终点落在头部上方，避免气泡悬空或压住蟑螂身体。
+  const bubbleY = 18 - bubbleHeight;
 
   return (
     <svg className="roach-svg" viewBox="0 0 96 108" aria-hidden="true">
@@ -202,27 +223,27 @@ export function RoachSprite({
       </g>
       {showBubble && (
         <g transform={`rotate(${-travelAngle} 48 54)`} pointerEvents="none">
-          <rect
-            x="4"
-            y="4"
-            width="88"
-            height="25"
-            rx="7"
-            fill="#271811"
-            fillOpacity=".96"
-            stroke="#8a5130"
-            strokeWidth=".8"
+          {/* 气泡和尾巴使用同一条轮廓，避免独立三角形与底边叠出接缝线。 */}
+          <path
+            d={`M${bubbleX + 9} ${bubbleY} H${bubbleX + bubbleWidth - 9} Q${bubbleX + bubbleWidth} ${bubbleY} ${bubbleX + bubbleWidth} ${bubbleY + 9} V${bubbleY + bubbleHeight - 9} Q${bubbleX + bubbleWidth} ${bubbleY + bubbleHeight} ${bubbleX + bubbleWidth - 9} ${bubbleY + bubbleHeight} H55 L48 ${bubbleY + bubbleHeight + 7} L41 ${bubbleY + bubbleHeight} H${bubbleX + 9} Q${bubbleX} ${bubbleY + bubbleHeight} ${bubbleX} ${bubbleY + bubbleHeight - 9} V${bubbleY + 9} Q${bubbleX} ${bubbleY} ${bubbleX + 9} ${bubbleY} Z`}
+            fill="#ffffff"
+            stroke="#111111"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
           />
-          <path d="M22 29 L27 29 L24 34 Z" fill="#271811" />
           <text
             x="48"
-            y="20"
+            y={bubbleY + 15}
             textAnchor="middle"
-            fill="#ffe8d2"
+            fill="#111111"
             fontFamily="Microsoft YaHei, sans-serif"
-            fontSize="7"
+            fontSize="8.5"
           >
-            {bubbleText}
+            {dialogueLines.map((line, index) => (
+              <tspan key={`${line}-${index}`} x="48" dy={index === 0 ? 0 : 11}>
+                {line}
+              </tspan>
+            ))}
           </text>
         </g>
       )}
