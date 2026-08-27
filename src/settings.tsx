@@ -156,7 +156,7 @@ export default function Settings() {
           {saved && <p className="saved">已保存，桌宠参数立即生效</p>}
         </div>
         <div className="actions">
-          <button onClick={() => void getCurrentWindow().close()}>取消</button>
+          <button onClick={() => void getCurrentWindow().close()}>关闭</button>
           <button className="primary" onClick={() => void save()}>
             保存设置
           </button>

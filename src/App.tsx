@@ -55,10 +55,16 @@ export default function App() {
   const windowReady = useRef(false);
 
   const showWindow = () => {
-    // 先同步清除 Windows 非客户区，再显示窗口，避免首次激活闪出原生边框。
-    void invoke("prepare_roach_window")
-      .then(() => appWindow.current.show())
-      .catch((error) => console.error("准备显示桌宠窗口失败:", error));
+    // 绕过 Tauri show，避免 Tao 在显示时重新写回 WS_CAPTION 造成一帧边框。
+    void invoke("set_roach_window_visibility", { visible: true }).catch(
+      (error) => console.error("显示桌宠窗口失败:", error),
+    );
+  };
+
+  const hideWindow = () => {
+    void invoke("set_roach_window_visibility", { visible: false }).catch(
+      (error) => console.error("隐藏桌宠窗口失败:", error),
+    );
   };
 
   const updateWindowVisibility = (count: number) => {
@@ -72,12 +78,12 @@ export default function App() {
     }
     const index = windowIndex(appWindow.current.label);
     if (index >= count) {
-      void appWindow.current.hide();
+      hideWindow();
       return;
     }
     // 新窗口必须等 React 首帧和透明样式完成后再显示，避免 WebView2 白底闪现。
     if (!windowReady.current) {
-      void appWindow.current.hide();
+      hideWindow();
       return;
     }
     const remaining = startupDeadline.current - performance.now();
@@ -85,7 +91,7 @@ export default function App() {
       showWindow();
       return;
     }
-    void appWindow.current.hide();
+    hideWindow();
     revealTimer.current = window.setTimeout(() => {
       revealTimer.current = null;
       if (index < configuredCount.current) showWindow();

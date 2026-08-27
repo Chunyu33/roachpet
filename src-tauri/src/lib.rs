@@ -1,4 +1,7 @@
-use std::sync::Mutex;
+use std::{
+    collections::HashMap,
+    sync::{Mutex, OnceLock},
+};
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
@@ -6,14 +9,23 @@ use tauri::{
     WebviewWindowBuilder,
 };
 #[cfg(windows)]
+use windows::core::BOOL;
+#[cfg(windows)]
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{CreateRectRgn, SetWindowRgn};
 #[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetWindowLongPtrW, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, GWL_STYLE, SWP_FRAMECHANGED,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, WS_BORDER, WS_CAPTION, WS_EX_CLIENTEDGE,
-    WS_EX_DLGMODALFRAME, WS_EX_STATICEDGE, WS_EX_WINDOWEDGE, WS_MAXIMIZEBOX, WS_MINIMIZEBOX,
-    WS_SYSMENU, WS_THICKFRAME,
+    CallWindowProcW, DefWindowProcW, EnumChildWindows, GetWindowLongPtrW, IsWindowVisible,
+    SetWindowLongPtrW, SetWindowPos, ShowWindow, GWLP_WNDPROC, GWL_EXSTYLE, GWL_STYLE,
+    MA_NOACTIVATE, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SW_HIDE,
+    SW_SHOWNOACTIVATE, WM_MOUSEACTIVATE, WM_NCACTIVATE, WNDPROC, WS_BORDER, WS_CAPTION,
+    WS_EX_CLIENTEDGE, WS_EX_DLGMODALFRAME, WS_EX_NOACTIVATE, WS_EX_STATICEDGE, WS_EX_WINDOWEDGE,
+    WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_SYSMENU, WS_THICKFRAME,
 };
+
+#[cfg(windows)]
+static ORIGINAL_WND_PROCS: OnceLock<Mutex<HashMap<isize, isize>>> = OnceLock::new();
 
 const ROACH_WINDOW_COUNT: usize = 10;
 // 透明宿主需覆盖最大旋转包围盒，避免腿、触须和气泡被窗口边缘裁剪。
@@ -74,14 +86,25 @@ fn move_roach_window(window: WebviewWindow, x: f64, y: f64) -> Result<(), String
 }
 
 #[tauri::command]
-fn prepare_roach_window(window: WebviewWindow) -> Result<(), String> {
-    // 每次显示前重新清理非客户区，防止 Windows 在隐藏窗口首次激活时恢复边框。
-    window
-        .set_decorations(false)
-        .map_err(|error| format!("设置桌宠无边框失败: {error}"))?;
+fn set_roach_window_visibility(window: WebviewWindow, visible: bool) -> Result<(), String> {
     #[cfg(windows)]
-    remove_native_frame(&window).map_err(|error| format!("准备桌宠窗口失败: {error}"))?;
-    Ok(())
+    {
+        // 绕过 Tauri/Tao 的 set_visible，避免显示时重新写回标题栏样式。
+        let command = if visible { SW_SHOWNOACTIVATE } else { SW_HIDE };
+        unsafe {
+            let _ = ShowWindow(
+                window
+                    .hwnd()
+                    .map_err(|error| format!("获取桌宠窗口句柄失败: {error}"))?,
+                command,
+            );
+        }
+        return Ok(());
+    }
+    #[cfg(not(windows))]
+    window
+        .set_visible(visible)
+        .map_err(|error| format!("切换桌宠窗口可见性失败: {error}"))
 }
 
 #[derive(serde::Serialize)]
@@ -129,6 +152,8 @@ pub fn run() {
                 .skip_taskbar(true)
                 .resizable(false)
                 .shadow(false)
+                .focused(false)
+                .focusable(false)
                 .visible(false)
                 .position(160.0 * index as f64, 120.0 * index as f64)
                 .build()?;
@@ -164,7 +189,7 @@ pub fn run() {
             save_behavior_settings,
             set_roach_count,
             move_roach_window,
-            prepare_roach_window
+            set_roach_window_visibility
         ])
         .run(tauri::generate_context!())
         .expect("error while running RoachPet");
@@ -193,7 +218,17 @@ fn toggle_roach_windows<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
         .clamp(1, ROACH_WINDOW_COUNT);
     let visible = app
         .get_webview_window("main")
-        .and_then(|window| window.is_visible().ok())
+        .and_then(|window| {
+            #[cfg(windows)]
+            {
+                window
+                    .hwnd()
+                    .ok()
+                    .map(|hwnd| unsafe { IsWindowVisible(hwnd).as_bool() })
+            }
+            #[cfg(not(windows))]
+            window.is_visible().ok()
+        })
         .unwrap_or(true);
     for index in 0..ROACH_WINDOW_COUNT {
         if index >= configured_count {
@@ -205,20 +240,42 @@ fn toggle_roach_windows<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
             format!("roach-{index}")
         };
         if let Some(window) = app.get_webview_window(&label) {
-            let _ = if visible {
-                window.hide()
+            if visible {
+                let _ = set_native_window_visibility(&window, false);
             } else {
-                window.show()
-            };
+                // 原生样式在窗口创建时已配置，直接使用无激活显示避免边框重建。
+                let _ = set_native_window_visibility(&window, true);
+            }
         }
     }
 }
 
-fn configure_roach_window(window: &WebviewWindow) -> tauri::Result<()> {
-    window.set_always_on_top(true)?;
-    window.set_skip_taskbar(true)?;
+fn set_native_window_visibility<R: tauri::Runtime>(
+    window: &tauri::WebviewWindow<R>,
+    visible: bool,
+) -> tauri::Result<()> {
     #[cfg(windows)]
     {
+        let command = if visible { SW_SHOWNOACTIVATE } else { SW_HIDE };
+        unsafe {
+            let _ = ShowWindow(window.hwnd()?, command);
+        }
+        return Ok(());
+    }
+    #[cfg(not(windows))]
+    window.set_visible(visible)
+}
+
+fn configure_roach_window<R: tauri::Runtime>(
+    window: &tauri::WebviewWindow<R>,
+) -> tauri::Result<()> {
+    window.set_always_on_top(true)?;
+    window.set_skip_taskbar(true)?;
+    // 桌宠只需要鼠标消息，不应因透明区域点击抢走其他应用焦点或触发非客户区绘制。
+    window.set_focusable(false)?;
+    #[cfg(windows)]
+    {
+        // 窗口仍处于隐藏状态时清理一次原生样式，后续 show 不再触发非客户区重建。
         remove_native_frame(window)?;
         apply_roach_hit_region(window)?;
     }
@@ -227,7 +284,7 @@ fn configure_roach_window(window: &WebviewWindow) -> tauri::Result<()> {
 
 /// Windows 透明窗口在获得焦点时可能重新绘制非客户区，显式清掉样式位可阻止标题栏闪现。
 #[cfg(windows)]
-fn remove_native_frame(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+fn remove_native_frame<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>) -> tauri::Result<()> {
     let hwnd = window.hwnd()?;
     let style_mask =
         (WS_BORDER | WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU).0
@@ -241,8 +298,11 @@ fn remove_native_frame(window: &tauri::WebviewWindow) -> tauri::Result<()> {
         SetWindowLongPtrW(
             hwnd,
             GWL_EXSTYLE,
-            current_extended_style & !extended_style_mask,
+            (current_extended_style & !extended_style_mask) | WS_EX_NOACTIVATE.0 as isize,
         );
+        install_no_activate_proc(hwnd);
+        // 鼠标实际通常命中 WebView2 子窗口，因此父窗口之外也要拦截其激活消息。
+        let _ = EnumChildWindows(Some(hwnd), Some(install_child_no_activate_proc), LPARAM(0));
         // 通知 DWM 按新的无边框样式重算非客户区，但不改变窗口位置、尺寸或激活状态。
         SetWindowPos(
             hwnd,
@@ -258,10 +318,66 @@ fn remove_native_frame(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
+#[cfg(windows)]
+unsafe extern "system" fn install_child_no_activate_proc(hwnd: HWND, _: LPARAM) -> BOOL {
+    install_no_activate_proc(hwnd);
+    BOOL(1)
+}
+
+#[cfg(windows)]
+fn install_no_activate_proc(hwnd: HWND) {
+    let procedures = ORIGINAL_WND_PROCS.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut procedures = match procedures.lock() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    if procedures.contains_key(&(hwnd.0 as isize)) {
+        return;
+    }
+    unsafe {
+        let previous = SetWindowLongPtrW(
+            hwnd,
+            GWLP_WNDPROC,
+            roach_window_proc as *const () as usize as isize,
+        );
+        if previous != 0 {
+            procedures.insert(hwnd.0 as isize, previous);
+        }
+    }
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn roach_window_proc(
+    hwnd: HWND,
+    message: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    if message == WM_MOUSEACTIVATE {
+        // 保留鼠标消息分发，但禁止点击桌宠窗口时激活它或触发非客户区绘制。
+        return LRESULT(MA_NOACTIVATE as isize);
+    }
+    if message == WM_NCACTIVATE {
+        // 即使系统发送了非客户区激活消息，也不让默认窗口过程绘制标题栏边框。
+        return LRESULT(1);
+    }
+    let previous = ORIGINAL_WND_PROCS
+        .get()
+        .and_then(|procedures| procedures.lock().ok())
+        .and_then(|procedures| procedures.get(&(hwnd.0 as isize)).copied());
+    if let Some(previous) = previous {
+        let previous: WNDPROC = Some(std::mem::transmute(previous));
+        return CallWindowProcW(previous, hwnd, message, wparam, lparam);
+    }
+    DefWindowProcW(hwnd, message, wparam, lparam)
+}
+
 /// Keep the native host canvas bounded to the small pet area while allowing
 /// rotated legs, long antennae, and speech bubbles to render without clipping.
 #[cfg(windows)]
-fn apply_roach_hit_region(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+fn apply_roach_hit_region<R: tauri::Runtime>(
+    window: &tauri::WebviewWindow<R>,
+) -> tauri::Result<()> {
     let scale = window.scale_factor()?;
     let edge = |value: f64| (value * scale).round() as i32;
     // Use a transparent rectangular canvas instead of an ellipse. The old

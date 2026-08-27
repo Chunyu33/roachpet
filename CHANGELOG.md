@@ -2,10 +2,7 @@
 
 ## 1.0.0 - 2026-08-27
 
-- Transparent, borderless, always-on-top Windows desktop pet with tray controls.
-- Smooth roaming with pauses, bursts, edge handling, click-to-flee, and support for 1-10 roaches.
-- Animated SVG cockroach, configurable size and behavior, plus time-based Cantonese hover dialogue.
-- Portable Windows release; WebView2 runtime is expected to be installed separately.
-- Fixed native frame and first-show flashes on transparent roach windows.
-
-No automatic update functionality is included.
+- Transparent Windows desktop pet with smooth roaming, pauses, bursts, edge bouncing, and click-to-flee.
+- Supports 1–10 cockroaches, Chinese settings, tray controls, and time-based Cantonese hover dialogue.
+- Portable Windows package; WebView2 Runtime must be installed separately.
+- Fixed transparent-window frame flashes and prevented desktop-pet windows from activating other apps.
