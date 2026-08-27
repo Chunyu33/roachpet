@@ -29,7 +29,8 @@ export function createBehaviorConfig(
   const config = { ...DEFAULT_BEHAVIOR_CONFIG, ...overrides };
   return {
     ...config,
-    roachCount: Math.max(1, Math.floor(config.roachCount)),
+    // 数量上限与 Rust 实际创建的窗口数一致，避免配置值超过可用桌宠窗口。
+    roachCount: Math.min(10, Math.max(1, Math.floor(config.roachCount))),
     roachSize: Math.max(32, config.roachSize),
     startupDelaySeconds: Math.min(
       3600,

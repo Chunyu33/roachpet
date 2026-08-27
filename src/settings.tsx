@@ -50,12 +50,12 @@ export default function Settings() {
     <main className="settings">
       {/* <h1>RoachPet 设置</h1> */}
       <section className="form">
-        <label>
+        <label title="数量越多，透明桌宠窗口覆盖范围越大，可能影响其他应用的鼠标点击；建议从 1-3 只开始。">
           蟑螂数量
           <input
             type="number"
             min="1"
-            max="3"
+            max="10"
             value={config.roachCount}
             onChange={(event) =>
               update("roachCount", Number(event.target.value))

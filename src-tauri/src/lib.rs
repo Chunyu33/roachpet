@@ -7,8 +7,15 @@ use tauri::{
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{CreateRectRgn, SetWindowRgn};
+#[cfg(windows)]
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetWindowLongPtrW, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, GWL_STYLE, SWP_FRAMECHANGED,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, WS_BORDER, WS_CAPTION, WS_EX_CLIENTEDGE,
+    WS_EX_DLGMODALFRAME, WS_EX_STATICEDGE, WS_EX_WINDOWEDGE, WS_MAXIMIZEBOX, WS_MINIMIZEBOX,
+    WS_SYSMENU, WS_THICKFRAME,
+};
 
-const ROACH_WINDOW_COUNT: usize = 3;
+const ROACH_WINDOW_COUNT: usize = 10;
 // 透明宿主需覆盖最大旋转包围盒，避免腿、触须和气泡被窗口边缘裁剪。
 const ROACH_CANVAS_SIZE: f64 = 360.0;
 
@@ -29,9 +36,14 @@ fn save_behavior_settings(
         .lock()
         .map_err(|_| "桌宠数量状态锁定失败".to_string())? = count;
     // 设置窗口不直接操作其他 WebView，由 Rust 统一转发以避免窗口间状态不同步。
-    for label in ["main", "roach-1", "roach-2"] {
+    for index in 0..ROACH_WINDOW_COUNT {
+        let label = if index == 0 {
+            "main".to_string()
+        } else {
+            format!("roach-{index}")
+        };
         let window = app
-            .get_webview_window(label)
+            .get_webview_window(&label)
             .ok_or_else(|| format!("找不到桌宠窗口: {label}"))?;
         window
             .emit("settings-updated", settings.clone())
@@ -59,6 +71,17 @@ fn move_roach_window(window: WebviewWindow, x: f64, y: f64) -> Result<(), String
             physical_x, physical_y,
         )))
         .map_err(|error| format!("移动桌宠窗口失败: {error}"))
+}
+
+#[tauri::command]
+fn prepare_roach_window(window: WebviewWindow) -> Result<(), String> {
+    // 每次显示前重新清理非客户区，防止 Windows 在隐藏窗口首次激活时恢复边框。
+    window
+        .set_decorations(false)
+        .map_err(|error| format!("设置桌宠无边框失败: {error}"))?;
+    #[cfg(windows)]
+    remove_native_frame(&window).map_err(|error| format!("准备桌宠窗口失败: {error}"))?;
+    Ok(())
 }
 
 #[derive(serde::Serialize)]
@@ -140,7 +163,8 @@ pub fn run() {
             get_screen_bounds,
             save_behavior_settings,
             set_roach_count,
-            move_roach_window
+            move_roach_window,
+            prepare_roach_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running RoachPet");
@@ -171,11 +195,16 @@ fn toggle_roach_windows<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
         .get_webview_window("main")
         .and_then(|window| window.is_visible().ok())
         .unwrap_or(true);
-    for (index, label) in ["main", "roach-1", "roach-2"].into_iter().enumerate() {
+    for index in 0..ROACH_WINDOW_COUNT {
         if index >= configured_count {
             continue;
         }
-        if let Some(window) = app.get_webview_window(label) {
+        let label = if index == 0 {
+            "main".to_string()
+        } else {
+            format!("roach-{index}")
+        };
+        if let Some(window) = app.get_webview_window(&label) {
             let _ = if visible {
                 window.hide()
             } else {
@@ -189,7 +218,43 @@ fn configure_roach_window(window: &WebviewWindow) -> tauri::Result<()> {
     window.set_always_on_top(true)?;
     window.set_skip_taskbar(true)?;
     #[cfg(windows)]
-    apply_roach_hit_region(window)?;
+    {
+        remove_native_frame(window)?;
+        apply_roach_hit_region(window)?;
+    }
+    Ok(())
+}
+
+/// Windows 透明窗口在获得焦点时可能重新绘制非客户区，显式清掉样式位可阻止标题栏闪现。
+#[cfg(windows)]
+fn remove_native_frame(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+    let hwnd = window.hwnd()?;
+    let style_mask =
+        (WS_BORDER | WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU).0
+            as isize;
+    let extended_style_mask =
+        (WS_EX_CLIENTEDGE | WS_EX_DLGMODALFRAME | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE).0 as isize;
+    unsafe {
+        let current_style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+        SetWindowLongPtrW(hwnd, GWL_STYLE, current_style & !style_mask);
+        let current_extended_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        SetWindowLongPtrW(
+            hwnd,
+            GWL_EXSTYLE,
+            current_extended_style & !extended_style_mask,
+        );
+        // 通知 DWM 按新的无边框样式重算非客户区，但不改变窗口位置、尺寸或激活状态。
+        SetWindowPos(
+            hwnd,
+            None,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+        )
+        .map_err(|error| tauri::Error::Io(std::io::Error::other(error.to_string())))?;
+    }
     Ok(())
 }
 

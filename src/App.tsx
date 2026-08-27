@@ -52,6 +52,14 @@ export default function App() {
   );
   const configuredCount = useRef(savedConfig.roachCount);
   const revealTimer = useRef<number | null>(null);
+  const windowReady = useRef(false);
+
+  const showWindow = () => {
+    // 先同步清除 Windows 非客户区，再显示窗口，避免首次激活闪出原生边框。
+    void invoke("prepare_roach_window")
+      .then(() => appWindow.current.show())
+      .catch((error) => console.error("准备显示桌宠窗口失败:", error));
+  };
 
   const updateWindowVisibility = (count: number) => {
     configuredCount.current = count;
@@ -67,15 +75,20 @@ export default function App() {
       void appWindow.current.hide();
       return;
     }
+    // 新窗口必须等 React 首帧和透明样式完成后再显示，避免 WebView2 白底闪现。
+    if (!windowReady.current) {
+      void appWindow.current.hide();
+      return;
+    }
     const remaining = startupDeadline.current - performance.now();
     if (remaining <= 0) {
-      void appWindow.current.show();
+      showWindow();
       return;
     }
     void appWindow.current.hide();
     revealTimer.current = window.setTimeout(() => {
       revealTimer.current = null;
-      if (index < configuredCount.current) void appWindow.current.show();
+      if (index < configuredCount.current) showWindow();
     }, remaining);
   };
 
@@ -119,6 +132,22 @@ export default function App() {
         revealTimer.current = null;
       }
       void unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  useEffect(() => {
+    // 双 requestAnimationFrame 确保透明 DOM 至少完成一次浏览器绘制后再显示原生窗口。
+    let firstFrame = 0;
+    let secondFrame = 0;
+    firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        windowReady.current = true;
+        updateWindowVisibility(configuredCount.current);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
     };
   }, []);
 

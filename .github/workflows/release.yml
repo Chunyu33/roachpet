@@ -1,0 +1,41 @@
+name: Release portable Windows build
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build portable package
+        run: npm run tauri:portable
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RoachPet ${{ github.ref_name }}
+          body_path: .github/releases/v1.0.0.md
+          files: src-tauri/target/release/bundle/RoachPet-1.0.0-windows-x64-portable.zip
+          generate_release_notes: false

@@ -9,11 +9,13 @@ npm install
 npm run tauri:dev
 ```
 
-Build a Windows installer:
+Build a portable Windows release:
 
 ```bash
-npm run tauri:build
+npm run tauri:portable
 ```
+
+The ZIP is written to `src-tauri/target/release/bundle/`. Windows WebView2 Runtime must already be installed; it is not bundled. RoachPet does not provide automatic updates.
 
 ## Current MVP
 
@@ -21,7 +23,7 @@ npm run tauri:build
 - Click-through transparent window corners with clickable cockroach hit regions
 - Structured inline SVG sprite (`src/components/RoachSprite.tsx`) with independently animated legs, head, abdomen, and antennae
 - Smooth acceleration/deceleration, curved turns, edge bouncing, random idle pauses, short run bursts, and flee behavior
-- One roach window by default (settings support 1–3 independent roaches)
+- One roach window by default (settings support 1–10 independent roaches)
 - Behavior values centralized in `src/game/behaviorConfig.ts`
 
 ## Structure
