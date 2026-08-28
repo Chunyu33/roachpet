@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 chcp 65001 | Out-Null
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
@@ -42,23 +42,26 @@ New-Item -ItemType Directory -Path $bundleDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
 Copy-Item -LiteralPath $executablePath -Destination (Join-Path $portableDirectory "RoachPet.exe")
 
-$portableReadme = @"
-RoachPet 1.0.0 便携版
-
-RoachPet 是一只会在桌面上乱爬的广东蟑螂桌宠。
-
-使用方法：
-1. 解压整个压缩包。
-2. 双击 RoachPet.exe 启动。
-3. 在系统托盘中右键 RoachPet 图标，可打开设置或退出程序。
-
-运行要求：
-- Windows 10 或更高版本
-- 已安装 Microsoft Edge WebView2 Runtime
-
-本版本无需安装，不包含自动更新功能。
-"@
-Set-Content -LiteralPath (Join-Path $portableDirectory "README.txt") -Value $portableReadme -Encoding utf8
+$portableReadme = @(
+  "RoachPet 1.0.0 便携版",
+  "",
+  "RoachPet 是一只会在桌面上乱爬的广东蟑螂桌宠。",
+  "",
+  "使用方法：",
+  "1. 解压整个压缩包。",
+  "2. 双击 RoachPet.exe 启动。",
+  "3. 在系统托盘中右键 RoachPet 图标，可打开设置或退出程序。",
+  "",
+  "运行要求：",
+  "- Windows 10 或更高版本",
+  "- 已安装 Microsoft Edge WebView2 Runtime",
+  "",
+  "本版本无需安装，不包含自动更新功能。"
+) -join [Environment]::NewLine
+# 写入 BOM，兼容按系统编码猜测文件类型的 Windows 编辑器，避免中文显示乱码。
+$readmePath = Join-Path $portableDirectory "README.txt"
+$utf8WithBom = New-Object System.Text.UTF8Encoding($true)
+[System.IO.File]::WriteAllText($readmePath, $portableReadme, $utf8WithBom)
 
 Compress-Archive -Path (Join-Path $portableDirectory "*") -DestinationPath $archivePath -CompressionLevel Optimal
 Write-Host "Portable archive created: $archivePath"
