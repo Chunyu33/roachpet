@@ -13,6 +13,12 @@ npx tauri build --no-bundle
 
 $releaseDirectory = Join-Path $projectRoot "src-tauri\target\release"
 $executablePath = Join-Path $releaseDirectory "roachpet.exe"
+$frontendEntry = Join-Path $projectRoot "dist\index.html"
+
+if (-not (Test-Path -LiteralPath $frontendEntry)) {
+  throw "Frontend assets were not generated: $frontendEntry"
+}
+
 $portableDirectory = Join-Path $releaseDirectory "portable\RoachPet-1.0.0-windows-x64"
 $archivePath = Join-Path $releaseDirectory "bundle\RoachPet-1.0.0-windows-x64-portable.zip"
 
