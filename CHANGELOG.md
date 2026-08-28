@@ -7,3 +7,4 @@
 - Portable Windows package; WebView2 Runtime must be installed separately.
 - Fixed transparent-window frame flashes and prevented desktop-pet windows from activating other apps.
 - Fixed GitHub Actions portable builds by removing stale generated Vite config files.
+- Fixed portable ZIP packaging when Tauri runs with `--no-bundle`.

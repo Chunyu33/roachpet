@@ -23,7 +23,8 @@ if (-not (Test-Path -LiteralPath $frontendEntry)) {
 }
 
 $portableDirectory = Join-Path $releaseDirectory "portable\RoachPet-1.0.0-windows-x64"
-$archivePath = Join-Path $releaseDirectory "bundle\RoachPet-1.0.0-windows-x64-portable.zip"
+$bundleDirectory = Join-Path $releaseDirectory "bundle"
+$archivePath = Join-Path $bundleDirectory "RoachPet-1.0.0-windows-x64-portable.zip"
 
 if (-not (Test-Path $executablePath)) {
   throw "Release executable was not generated: $executablePath"
@@ -36,6 +37,8 @@ if (Test-Path $archivePath) {
   Remove-Item -LiteralPath $archivePath -Force
 }
 
+# --no-bundle 不会创建 bundle 目录，先显式创建再写入便携 ZIP。
+New-Item -ItemType Directory -Path $bundleDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
 Copy-Item -LiteralPath $executablePath -Destination (Join-Path $portableDirectory "RoachPet.exe")
 
