@@ -3,3 +3,8 @@ dist
 local
 src-tauri/target
 src-tauri/Cargo.lock
+
+# TypeScript 构建产生的配置文件和增量缓存不应进入仓库，避免 CI 使用过期配置。
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
