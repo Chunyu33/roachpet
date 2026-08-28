@@ -10,6 +10,9 @@ Set-Location $projectRoot
 
 # 便携版只需要 Tauri 可执行文件，Tauri 会通过 beforeBuildCommand 构建并嵌入前端资源。
 npx tauri build --no-bundle
+if ($LASTEXITCODE -ne 0) {
+  throw "Tauri portable build failed with exit code $LASTEXITCODE"
+}
 
 $releaseDirectory = Join-Path $projectRoot "src-tauri\target\release"
 $executablePath = Join-Path $releaseDirectory "roachpet.exe"
