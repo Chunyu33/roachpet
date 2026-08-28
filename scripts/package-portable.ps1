@@ -43,15 +43,20 @@ New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
 Copy-Item -LiteralPath $executablePath -Destination (Join-Path $portableDirectory "RoachPet.exe")
 
 $portableReadme = @"
-RoachPet 1.0.0 - Portable Windows build
+RoachPet 1.0.0 便携版
 
-Run RoachPet.exe directly. No installation is required.
+RoachPet 是一只会在桌面上乱爬的广东蟑螂桌宠。
 
-Requirements:
-- Windows 10 or later
-- Microsoft Edge WebView2 Runtime
+使用方法：
+1. 解压整个压缩包。
+2. 双击 RoachPet.exe 启动。
+3. 在系统托盘中右键 RoachPet 图标，可打开设置或退出程序。
 
-RoachPet does not include automatic updates.
+运行要求：
+- Windows 10 或更高版本
+- 已安装 Microsoft Edge WebView2 Runtime
+
+本版本无需安装，不包含自动更新功能。
 "@
 Set-Content -LiteralPath (Join-Path $portableDirectory "README.txt") -Value $portableReadme -Encoding utf8
 
